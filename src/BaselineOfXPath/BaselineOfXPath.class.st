@@ -1,6 +1,6 @@
 Class {
 	#name : #BaselineOfXPath,
-	#superclass : #Object,
+	#superclass : #BaselineOf,
 	#instVars : [
 		'project'
 	],
