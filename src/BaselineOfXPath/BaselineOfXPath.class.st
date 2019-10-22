@@ -1,9 +1,6 @@
 Class {
 	#name : #BaselineOfXPath,
 	#superclass : #BaselineOf,
-	#instVars : [
-		'project'
-	],
 	#classVars : [
 		'LastVersionLoad'
 	],
