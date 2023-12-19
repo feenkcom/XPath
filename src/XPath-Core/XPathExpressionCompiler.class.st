@@ -44,9 +44,9 @@ XPathExpressionCompiler >> compileExpression: anExpressionSourceStringOrStream [
 { #category : #translating }
 XPathExpressionCompiler >> compileTranslatedExpression: aTranslatedExpression [
 	^ XPathCompiledExpression
-		block:
-			(self class systemCompilerClass evaluate:
-				aTranslatedExpression sourceCode)
+		block: (self class systemCompilerClass new
+				source: aTranslatedExpression sourceCode;
+				evaluate)
 		nodeTests: aTranslatedExpression nodeTests
 ]
 

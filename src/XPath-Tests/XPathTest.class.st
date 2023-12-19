@@ -3,7 +3,9 @@ Class {
 	#superclass : #TestCase,
 	#instVars : [
 		'xml',
-		'document'
+		'document',
+		'namespacedDocument',
+		'textDocument'
 	],
 	#category : #'XPath-Tests'
 }
@@ -99,16 +101,18 @@ XPathTest >> nodeSetClass [
 
 { #category : #accessing }
 XPathTest >> setUp [
-	"Need this for VW parser"
-	| parser |
-	xml := self addressBookXML.
-	"This is for the basic XML parser (what's it called again?)"
-	document := XMLDOMParser parseDocumentFrom: xml readStream.
-	"This is for the ported VW parser
-	parser := VWXMLXMLParser on: XMLTokenizer addressBookXML readStream.
-	parser validate: false.
-	parser scanDocument.
-	document := parser documentNode root"
+	document :=
+		(XMLDOMParser on: XMLParserTest addressBookXML)
+			preservesCommentNodes: true;
+			parseDocument.
+	namespacedDocument := 
+		(XMLDOMParser on: XMLParserTest addressBookNamespacePrefixedXML)
+			preservesCommentNodes: true;
+			parseDocument.
+	textDocument :=
+		(XMLDOMParser on: self textDocumentXML)
+			preservesCommentNodes: true;
+			parseDocument.
 ]
 
 { #category : #tests }
@@ -315,10 +319,10 @@ XPathTest >> testAsXPath [
 { #category : #testing }
 XPathTest >> testAttribute [
 	| path results |
-	path := XPath for: 'person/address/@city'.
+	path := XPath for: 'addressbook/person/address/@city'.
 	results := path in: document.
 	self assert: results size = 4 & (results size > 0).
-	self assert: (results at: 1)
+	self assert: (results at: 1) value
 			= 'Los Angeles'
 ]
 
@@ -578,15 +582,6 @@ XPathTest >> testConcatFunction [
 		raise: XPathArgumentNumberException.
 ]
 
-{ #category : #testing }
-XPathTest >> testCount [
-	| path results |
-	path := XPath for: 'count(person)'.
-	results := path in: document.
-	self assert: results size = 1.
-	self assert: ((results at: 1) = 4).
-]
-
 { #category : #tests }
 XPathTest >> testCountFunction [
 	self assert:
@@ -609,7 +604,7 @@ XPathTest >> testDescendant [
 	path := XPath for: '//address/@city'.
 	results := path in: document.
 	self assert: results size = 4 & (results size > 0).
-	self assert: (results at: 1)
+	self assert: (results at: 1) value
 			= 'Los Angeles'.
 
 ]
@@ -814,34 +809,33 @@ XPathTest >> testDocumentOrderPreserving [
 		hasNodes: expected.
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testDot [
 	| path results |
-	path := XPath for: 'person/address/./@city'.
+
+	path := XPath for: 'addressbook/person/address/./@city'.
 	results := path in: document.
-	self assert: results size = 4 & (results size > 0).
-	self assert: (results at: 1)
-			= 'Los Angeles'.
+	self assert: results size = 4.
+	self assert: (results at: 1) value = 'Los Angeles'.
 
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testDotDot [
 	| path results |
-	path := XPath for: 'person/address/../address/@city'.
+	path := XPath for: 'addressbook/person/address/../address/@city'.
 	results := path in: document.
-	self assert: results size = 4 & (results size > 0).
-	self assert: (results at: 1)
-			= 'Los Angeles'.
+	self assert: results size = 4.
+	self assert: (results at: 1) value = 'Los Angeles'.
 
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testDotDotTooHigh [
 	| path results |
 	path := XPath for: 'person/address/../../../address/@city'.
 	results := path in: document.
-	self assert: (results size = 0).
+	self assert: results isEmpty.
 ]
 
 { #category : #tests }
@@ -1416,14 +1410,6 @@ XPathTest >> testLangFunction [
 			(XMLNodeList with: docWithLangElements descendantElements last).
 ]
 
-{ #category : #testing }
-XPathTest >> testLast [
-	| path results |
-	path := XPath for: 'person/last()'.
-	results := path in: document.
-	self assert: (results size = 4).
-]
-
 { #category : #tests }
 XPathTest >> testLastFunction [
 	| path elements |
@@ -1939,10 +1925,10 @@ XPathTest >> testNumberTokenizing [
 		assert: ' -.12 ' asXPath evaluate = -0.12
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testOneLevel [
 	| path results |
-	path := XPath for: 'person'.
+	path := XPath for: 'addressbook/person'.
 	results := path in: document.
 	self assert: (results size = 4).
 ]
@@ -3461,15 +3447,15 @@ XPathTest >> testTextTypeTest [
 		raise: XPathSyntaxException.
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testThreeLevel [
 	| path results |
-	path := XPath for: 'person/contact-info/email'.
+	path := XPath for: '*/person/contact-info/email'.
 	results := path in: document.
 	self assert: (results size = 2).
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testTopLevel [
 	| path results elem |
 	path := XPath for: 'addressbook'.
@@ -3507,10 +3493,10 @@ XPathTest >> testTrueFunction [
 		raise: XPathArgumentNumberException.
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testTwoLevel [
 	| path results |
-	path := XPath for: 'person/address'.
+	path := XPath for: '/*/person/address'.
 	results := path in: document.
 	self assert: (results size = 4).
 ]
@@ -3622,31 +3608,41 @@ XPathTest >> testVariables [
 					((each elementAt: 'address') attributeAt: 'city') = 'Los Angeles']).
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testWildcard [
 	| path results |
-	path := XPath for: '/*'.
+
+	path := XPath for: 'addressbook/*'.
 	results := path in: document.
-	self assert: (results size = 4).
+	self assert: results size = 4.
+	self
+		assertNodeSet: results
+		hasNodes: (document allElementsNamed: 'person').
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testWildcardDescendant [
 	| path results |
+
 	path := XPath for: '//*'.
 	results := path in: document.
-	self assert: (results size = 27).
+	self assert: (results size = 28).
+	self
+		assertNodeSet: results
+		hasNodes: document descendantElements.
 ]
 
-{ #category : #testing }
+{ #category : #tests }
 XPathTest >> testWildcardDescendantAttribute [
 	| path results |
 	path := XPath for: '//*/@city'.
 	results := path in: document.
-	self assert: results size = 4 & (results size > 0).
-	self assert: (results at: 1)
-			= 'Los Angeles'.
-
+	self assert: results size = 4.
+	self
+		assertNodeSet: results
+		hasNodes:
+			((document allElementsSelect: [:each | each includesAttribute: 'city'])
+				collect: [:each | each attributeNodeAt: 'city']).
 ]
 
 { #category : #tests }

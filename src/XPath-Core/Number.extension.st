@@ -1,5 +1,18 @@
 Extension { #name : #Number }
 
+{ #category : #'*XPath-Core' }
+Number >> % aNumber [ 
+	"modulo. Remainder defined in terms of //. Answer a Number with the 
+	same sign as aNumber."
+	
+	"9 % 4 >>> 1"
+	"-9 % 4 >>> 3"
+	"9 % -4 >>> -3"
+	
+	
+	^ self \\ aNumber
+]
+
 { #category : #'*XPath-Core-converting' }
 Number >> asXPathBoolean [
 	^ (self isNaN
@@ -107,6 +120,21 @@ Number >> hasSameXPathSignAs: aNumber [
 		or: [self isXPathNegativeZero]) =
 			(aNumber negative
 				or: [aNumber isXPathNegativeZero])
+]
+
+{ #category : #'*XPath-Core' }
+Number >> isXPathNegativeZero [
+	"use #asFloat to convert non-floats and DecimalFloats that don't
+	understand #signBit before testing it"
+
+	^ self isZero and: [ self asFloat signBit = 1 ]
+]
+
+{ #category : #'*XPath-Core' }
+Number >> isXPathPositiveZero [ 
+	"see the #isXPathNegativeZero comment"
+	^ self isZero
+		and: [self asFloat signBit isZero]
 ]
 
 { #category : #'*XPath-Core-evaluating' }
