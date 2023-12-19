@@ -5,7 +5,8 @@ Class {
 		'xml',
 		'document',
 		'namespacedDocument',
-		'textDocument'
+		'textDocument',
+		'oldCompiledExpressionCacheEnabled'
 	],
 	#category : #'XPath-Tests'
 }
@@ -101,18 +102,24 @@ XPathTest >> nodeSetClass [
 
 { #category : #accessing }
 XPathTest >> setUp [
-	document :=
-		(XMLDOMParser on: XMLParserTest addressBookXML)
+	super setUp.
+	oldCompiledExpressionCacheEnabled := XPath compiledExpressionCacheEnabled.
+	document := (XMLDOMParser on: XMLParserTest addressBookXML)
 			preservesCommentNodes: true;
 			parseDocument.
-	namespacedDocument := 
-		(XMLDOMParser on: XMLParserTest addressBookNamespacePrefixedXML)
+	namespacedDocument := (XMLDOMParser
+			on: XMLParserTest addressBookNamespacePrefixedXML)
 			preservesCommentNodes: true;
 			parseDocument.
-	textDocument :=
-		(XMLDOMParser on: self textDocumentXML)
+	textDocument := (XMLDOMParser on: self textDocumentXML)
 			preservesCommentNodes: true;
-			parseDocument.
+			parseDocument
+]
+
+{ #category : #accessing }
+XPathTest >> tearDown [
+	XPath compiledExpressionCacheEnabled: oldCompiledExpressionCacheEnabled.
+	super tearDown
 ]
 
 { #category : #tests }
